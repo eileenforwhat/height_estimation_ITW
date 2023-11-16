@@ -19,11 +19,27 @@
 
 
 ## timeline
-1. two view reconstruction on human body
-2. collect photos of tall building
-3. two view reconstruction on building
-4. sfm on 
-5. presentation (Thursday, December 7, 2023)
 
+Work session (Monday 11/20)
+1. two view reconstruction on human body, figure out the kinks
+2. collect photos of tall building [cathedral of learning]
+3. two view reconstruction on building, should be easy
 
+Work session (Thursday 11/30)
+4. multi-view sfm on tall building, need to implement
+
+Work session (Saturday 12/2)
+5. collect photos of mountain, ROAD TRIPPPPP
+6. multi-view sfm on mountain
+
+Work session (put together results week of presentation)
+7. presentation (Thursday, December 7, 2023)
+
+Some other common deadlines
+- 11/21 geoviz ps5 due
+- 11/23 thanksgiving
+- 11/27 comphoto project proposal due
+- 12/14 geoviz project reports due
+- 12/8 comphoto hw6 due
+- 12/18 comphoto project due
 
