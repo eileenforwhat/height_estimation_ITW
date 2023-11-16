@@ -32,7 +32,7 @@ Work session (Saturday 12/2)
 5. collect photos of mountain, ROAD TRIPPPPP
 6. multi-view sfm on mountain
 
-Work session (put together results week of presentation)
+Work session (put together results week of presentation: TBD date)
 7. presentation (Thursday, December 7, 2023)
 
 Some other common deadlines
