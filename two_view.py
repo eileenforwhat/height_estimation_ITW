@@ -266,7 +266,7 @@ def get_camera_centers(camera_matrices: List[np.array]):
     return camera_centers
 
 
-def calibrate(uncalibrated_3d_coords: List[np.array], threeD_prior_coords, prior_length):
+def calibrate(uncalibrated_3d_coords: List[np.array], threeD_prior_coords, prior_length, prior_width):
     """
     Calibrate the 3d coordinates of the peak object.
     given the actual length of the prior object, rescale the 3D points,
@@ -280,14 +280,18 @@ def calibrate(uncalibrated_3d_coords: List[np.array], threeD_prior_coords, prior
     # change from homogeneous to heterogenous coordinates
     threeD_prior_coords = threeD_prior_coords / threeD_prior_coords[-1]
     print(f"{threeD_prior_coords=}")
-    assert threeD_prior_coords.shape == (4, 2)
-    uncalibrated_prior_length = np.linalg.norm(threeD_prior_coords[:,0] - threeD_prior_coords[:,1]) # length of prior in previous coordinate system
-    scale_factor = prior_length / uncalibrated_prior_length
-    print(f'{uncalibrated_prior_length=} {prior_length=} {scale_factor=}')
+    # assert threeD_prior_coords.shape == (4, 2)
+    uncalibrated_prior_length = np.linalg.norm(threeD_prior_coords[:,0] - threeD_prior_coords[:,3]) # length of prior in previous coordinate system
+    uncalibrated_prior_width = np.linalg.norm(threeD_prior_coords[:,0] - threeD_prior_coords[:,1]) # length of prior in previous coordinate system
+    scale_factor_h = prior_length / uncalibrated_prior_length
+    scale_factor_w = prior_width / uncalibrated_prior_width
+    # scale_factor_h = uncalibrated_prior_length / prior_length
+    # scale_factor_w = uncalibrated_prior_width / prior_width
+    print(f'{uncalibrated_prior_length=} {uncalibrated_prior_width} {prior_length=} {prior_width=} {scale_factor_h=} {scale_factor_w=}')
     for coords in uncalibrated_3d_coords:
         coords = coords / coords[-1]
         print(f"{coords=}")
-        coords[:3] = coords[:3] * scale_factor
+        coords[:3] = coords[:3] * np.array([scale_factor_h, scale_factor_w, 1]).reshape(3, 1)
         calibrated_3d_coords.append(coords)
     return calibrated_3d_coords
 
@@ -343,7 +347,6 @@ def show_viz(img1, img2, pts1, pts2, F, title=""):
 def show_viz_3d(peaks, priors, cameras, keypoints):
     # visualize in 3D each point in peak, prior, camera, keypoints
     # each object is an np matrix of shape (4, n)
-    from mpl_toolkits.mplot3d import Axes3D
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -355,6 +358,56 @@ def show_viz_3d(peaks, priors, cameras, keypoints):
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
     plt.show()
+
+
+def calibrate_ground_plane(P1, P2, img1, img2, ground_plane_path, force_recompute=False):
+    if os.path.exists(ground_plane_path) and not force_recompute:
+        plane = np.load(ground_plane_path)
+        print(f"Loading ground plane from file {ground_plane_path}")
+        print("ground plane: ", plane)
+        return plane
+    
+    ground_pts = []
+    for img in [img1, img2]:
+        coords = annotate(img, "Calibrate ground plane: click on THREE points on ground plane.")
+        ground_pts.append(coords)
+    assert len(ground_pts) == 2  # assume two images
+    threed_ground_pts = triangulate(P1, P2, ground_pts[0].T, ground_pts[1].T)  # 4,3
+    plane = find_plane_equation(threed_ground_pts[:, 0], threed_ground_pts[:, 1], threed_ground_pts[:, 2])
+    print("ground plane: ", plane)
+    np.save(ground_plane_path, plane)
+    print(f"Saved ground plane to file {ground_plane_path}")
+    return plane
+
+
+def find_plane_equation(p1, p2, p3):
+    if p1.shape[0] == 4:
+        p1 = p1 / p1[-1]
+        p1 = p1[:3]
+        p2 = p2 / p2[-1]
+        p2 = p2[:3]
+        p3 = p3 / p3[-1]
+        p3 = p3[:3]
+    # Create vectors from points
+    v1 = np.array(p2) - np.array(p1)
+    v2 = np.array(p3) - np.array(p1)
+
+    # Compute the cross product to find the normal
+    normal = np.cross(v1, v2)
+
+    # Extract coefficients
+    a, b, c = normal
+    d = -np.dot(normal, p1)
+
+    return a, b, c, d
+
+
+def height_estimation_from_ground(ground_plane, peak_coords):
+    # ground_plane: (4, 1)
+    # peak_coords: (4, 1)
+    num = np.abs(ground_plane[0] * peak_coords[0] + ground_plane[1] * peak_coords[1] + ground_plane[2] * peak_coords[2] + ground_plane[3])
+    denom = np.sqrt(ground_plane[0] ** 2 + ground_plane[1] ** 2 + ground_plane[2] ** 2)
+    return num / denom
     
 
 if __name__ == '__main__':
@@ -374,7 +427,7 @@ if __name__ == '__main__':
         N=50, 
         corresp_path=corresp_path, 
         viz_match_path=viz_match_path, 
-        force_recompute=True
+        force_recompute=False
     )
     # pts1, pts2 = manual_extract_kps_two_view(
     #     images, 
@@ -408,11 +461,14 @@ if __name__ == '__main__':
     threeD_peak_coords = triangulate(P1, P2, peak_coords1, peak_coords2)  # (4 x 2) 3d points
     threeD_prior_coords = triangulate(P1, P2, prior_coords1, prior_coords2) # (4 x 2) 3d points
 
-    prior_height = 27  # placeholder, units: centimeters (3d)
+    prior_height = 31  # placeholder, units: centimeters (3d)
+    prior_width = 14  # placeholder, units: centimeters (3d)
     camera_altitude = None # None if we annotate two points (peak, base) of the mountain
     
-    calibrated_peak_coords, C1, C2 = calibrate([threeD_peak_coords, C1, C2], threeD_prior_coords, prior_height)
+    calibrated_peak_coords = calibrate([threeD_peak_coords], threeD_prior_coords, prior_height, prior_width)[0]
     height = height_estimation(calibrated_peak_coords, camera_altitude)
+    # ground_plane = calibrate_ground_plane(P1, P2, images[0], images[1], 'data/simon/ground_plane.npy', force_recompute=False)
+    # height = height_estimation_from_ground(ground_plane, calibrated_peak_coords[:, 0])
     print(height)
     assert 100 < height < 200, f"Simon's height out of bounds. Got {height=}. Expected 175cm."
     
