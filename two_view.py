@@ -186,7 +186,7 @@ def find_fundamental_matrix(match_pts1, match_pts2):
         match_pts1, 
         match_pts2, 
         method=cv2.FM_RANSAC, 
-        ransacReprojThreshold=0.1, 
+        ransacReprojThreshold=1, 
         confidence=.99
     )
     print("F: ", F)
@@ -281,7 +281,7 @@ def calibrate(uncalibrated_3d_coords: List[np.array], threeD_prior_coords, prior
     threeD_prior_coords = threeD_prior_coords / threeD_prior_coords[-1]
     print(f"{threeD_prior_coords=}")
     assert threeD_prior_coords.shape == (4, 2)
-    uncalibrated_prior_length = np.linalg.norm(threeD_prior_coords[:,0] - threeD_prior_coords[:,1]) # length of prior in previous coordinate system
+    uncalibrated_prior_length = np.linalg.norm(threeD_prior_coords[:,0] - threeD_prior_coords[:,1], ord=2) # length of prior in previous coordinate system
     scale_factor = prior_length / uncalibrated_prior_length
     print(f'{uncalibrated_prior_length=} {prior_length=} {scale_factor=}')
     for coords in uncalibrated_3d_coords:
@@ -304,7 +304,7 @@ def height_estimation(calibrated_peak_coords, camera_altitude=None):
 
     # compute the height of the peak object in relation to the camera position
     if camera_altitude is None:
-        height = np.linalg.norm(calibrated_peak_coords[:,0] - calibrated_peak_coords[:,1])
+        height = np.linalg.norm(calibrated_peak_coords[:,0] - calibrated_peak_coords[:,1], ord=2)
 
     return height
 
@@ -331,29 +331,34 @@ def show_viz(img1, img2, pts1, pts2, F, title=""):
     for i in range(num_pts):
         lines.append(F @ pts1[i])
     
-    # for i, (a, b, c) in enumerate(lines):
-    #     x = np.array([0, img2.shape[1]])
-    #     y = (-c - a * x) / b
-    #     ax2.plot(x, y, c=colors[i % len(colors)], )
+    for i, (a, b, c) in enumerate(lines):
+        x = np.array([0, img2.shape[1]])
+        y = (-c - a * x) / b
+        ax2.plot(x, y, c=colors[i % len(colors)], )
     ax2.set_xlim(0, img1.shape[1])
     ax2.set_ylim(img1.shape[0], 0)
     plt.savefig('output/' + title + '.png')
     plt.show()
 
-def show_viz_3d(peaks, priors, cameras, keypoints):
+
+def show_viz_3d(peaks, priors, cameras):
     # visualize in 3D each point in peak, prior, camera, keypoints
     # each object is an np matrix of shape (4, n)
     from mpl_toolkits.mplot3d import Axes3D
+    cameras = cameras.T
+    assert peaks.shape[0] == 4, f"Expected shape (4, n), got {peaks.shape}"
+    assert priors.shape[0] == 4, f"Expected shape (4, n), got {priors.shape}"
+    assert cameras.shape[0] == 4, f"Expected shape (4, n), got {cameras.shape}"
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(peaks[0], peaks[1], peaks[2], c='r', marker='o')
-    ax.scatter(priors[0], priors[1], priors[2], c='b', marker='o')
-    ax.scatter(cameras[0], cameras[1], cameras[2], c='g', marker='o')
-    ax.scatter(keypoints[0], keypoints[1], keypoints[2], c='y', marker='o')
+    ax.scatter(peaks[0], peaks[1], peaks[2], c='r', marker='o', s=1)
+    ax.scatter(priors[0], priors[1], priors[2], c='b', marker='o', s=2)
+    # ax.scatter(cameras[0], cameras[1], cameras[2], c='g', marker='o', s=5)
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
+    ax.legend(['peaks', 'priors', 'cameras'])
     plt.show()
     
 
@@ -371,10 +376,10 @@ if __name__ == '__main__':
     ) # (2, H, W)
     pts1, pts2 = extract_kps_two_view(
         images, 
-        N=50, 
+        N=300, 
         corresp_path=corresp_path, 
         viz_match_path=viz_match_path, 
-        force_recompute=True
+        force_recompute=False
     )
     # pts1, pts2 = manual_extract_kps_two_view(
     #     images, 
@@ -389,8 +394,6 @@ if __name__ == '__main__':
     # (P, P’) is a solution -> (PH, P’H) is a solution
     P1, P2 = fundamental_matrix_to_camera_matrices(F) 
     C1, C2 = get_camera_centers([P1, P2])
-    
-    # visualize in 3D peak, prior, camera, keypoints
     
 
     peak_coords1, peak_coords2 = annotate_peak(
@@ -408,10 +411,13 @@ if __name__ == '__main__':
     threeD_peak_coords = triangulate(P1, P2, peak_coords1, peak_coords2)  # (4 x 2) 3d points
     threeD_prior_coords = triangulate(P1, P2, prior_coords1, prior_coords2) # (4 x 2) 3d points
 
-    prior_height = 27  # placeholder, units: centimeters (3d)
+    prior_height = 175  # placeholder, units: centimeters (3d)
     camera_altitude = None # None if we annotate two points (peak, base) of the mountain
     
-    calibrated_peak_coords, C1, C2 = calibrate([threeD_peak_coords, C1, C2], threeD_prior_coords, prior_height)
+    show_viz_3d(threeD_peak_coords, threeD_prior_coords, np.array([C1, C2]))
+
+    calibrated_peak_coords, calibrated_prior_coords, C1, C2 = calibrate([threeD_peak_coords, threeD_prior_coords, C1, C2], threeD_prior_coords, prior_height)
+    show_viz_3d(calibrated_peak_coords, calibrated_prior_coords, np.array([C1, C2]))
     height = height_estimation(calibrated_peak_coords, camera_altitude)
     print(height)
     assert 100 < height < 200, f"Simon's height out of bounds. Got {height=}. Expected 175cm."
