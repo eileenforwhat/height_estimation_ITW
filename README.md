@@ -1,14 +1,21 @@
 # height_estimation_ITW
 
+
+
+
 ## Method
-### Person (easiest)
+### Person (easiest) - assume only scale ambiguity
 1. Input: two images of a person holding prior object (known height, same plane as person)
 2. Extract keypoints and match correspondences (SIFT)
 3. Compute fundamental matrix F and camera matrices {P1, P2}
-4. Triangulate using manual annotations of person + prior object
-5. Calibrate projective ambiguity 
-6. Height estimation
+4. Triangulate using manual annotations of top/bottom of object
+5. Calibrate scale ambiguity using known prior object size
+6. Height estimation by scaling coords by scale
 ### Building (harder)
+1. Input: two images of a building taken from two gps locations
+2. Steps 2, 3, and 4 are same as above.
+5. Need to calibrate projective ambiguity using GPS coords and direction data
+6. Height estimation by absolving projective ambiguity
 ### Stretch: mountain (hardest)
 
 ## Concerns
@@ -24,16 +31,15 @@
 - perform ground-plane calibration from three collinear points (ref: https://www.researchgate.net/figure/Plant-height-measurements-using-stereo-vision_fig1_265797007)
 
 
-## To Do: two-view reconstruction
-- [ ] SIFT for keypoint detection & correspoondence - eileen
-- [x] copy F computation from assignments - simon
-- [ ] compute P, P' from F - simon
+## To Do
+- [x] projective ambiguity with direction constraints and bundle adjustment
+- [x] slides + presentation
+- [x] mountain images from google photos
 
-
-## To Do: SfM
-- [ ] Item 1
-- [ ] Item 2
-
+# leave for report
+- [ ] detector instead of annotation (we still need annotation for ground plane?)
+- [ ] ground plane estimation (from annotation, from depth map)
+- [ ] sfm from building video using colmap
 
 ## timeline
 
@@ -60,3 +66,9 @@ Some other common deadlines
 - 12/14 geoviz project reports due
 - 12/18 comphoto project due
 
+
+OH Notes:
+- to rectify projective ambuity, need 8 constraints 
+- center coords at first camera plane 
+- rotation (relative from EXIF) (3), square pixels (2+2), direction of translation (2)
+- bundle adjustment: K1, K2, R, T
