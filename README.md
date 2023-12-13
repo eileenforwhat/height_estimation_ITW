@@ -7,8 +7,8 @@ Our project goal is to develop a system for estimating the height of a standing 
 
 We will tackle sub-goals in the following order of increasing difficulty:
 1. Height estimation of a person using a known object calibration (`two_view_simon.py`).
-2. Height estimation of a building with GPS calibration (`two_view_cathedral`).
-3. Height estimation of a mountainous feature in the “wild” with GPS calibration (`two_view_mountain`).
+2. Height estimation of a building with GPS calibration (`two_view_cathedral.py`).
+3. Height estimation of a mountainous feature in the “wild” with GPS calibration (`two_view_mountain.py`).
 
 ![Simon](person.png)
 ![Building](cathedral.png)
