@@ -86,13 +86,13 @@ def gps_distance(
     # R – Earth's radius (R = 6371 km); and
     # d – Distance between them along Earth's surface.
     # convert to radians
-    lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
     # horizontal = 2 * 6371 * np.arcsin(np.sqrt(np.sin((lat2-lat1)/2)**2 + np.cos(lat1)*np.cos(lat2)*np.sin((lon2-lon1)/2)**2))
 
     # # horizontal = np.arccos(np.sin(lat1)*np.sin(lat2)+np.cos(lat1)*np.cos(lat2)*np.cos(lon2-lon1))*6371
     # vertical = abs(alt1 - alt2) # in meters
     # hypotenuse = np.sqrt(horizontal**2 + vertical**2)
     # return hypotenuse
+    lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
 
     # assume flat earth
     # Calculate the differences in latitude and longitude

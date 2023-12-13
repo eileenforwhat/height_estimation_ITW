@@ -215,7 +215,7 @@ def find_fundamental_matrix(pts1, pts2, normalize_points=True):
         pts1, 
         pts2, 
         method=cv2.FM_RANSAC, 
-        ransacReprojThreshold=1e-10, 
+        ransacReprojThreshold=1e-3, 
         confidence=.99
     )
     print("F: ", F)
@@ -670,8 +670,8 @@ if __name__ == '__main__':
     print(f'{calibrated_peak_coords=}')
     print(f'{scale_factor=}')
     show_viz_3d(calibrated_peak_coords, np.array([C1, C2]))
-    # height = height_estimation(calibrated_peak_coords, camera_altitude=None)
-    ground_plane = calibrate_ground_plane(P1, P2, images[0], images[1], 'data/mountain/ground_plane.npy', scale_factor, force_recompute=True)
-    height = height_estimation_from_ground(ground_plane, calibrated_peak_coords[:, 0])
+    height = height_estimation(calibrated_peak_coords, camera_altitude=None)
+    # ground_plane = calibrate_ground_plane(P1, P2, images[0], images[1], 'data/mountain/ground_plane.npy', scale_factor, force_recompute=True)
+    # height = height_estimation_from_ground(ground_plane, calibrated_peak_coords[:, 0])
     print(f'{height=}')
     

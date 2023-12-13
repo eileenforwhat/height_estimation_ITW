@@ -1,74 +1,26 @@
-# height_estimation_ITW
+# Height Estimation of Features in the Wild
+For full details, please download the PDF report attached to the repo.
+Project presentation can be found this [link](https://docs.google.com/presentation/d/1cGpQleLXKF0gDFHSSuaQA6kX0Zme7ceiBH8P8uRt2Ro/edit?usp=sharing).
 
+## Summary
+Our project goal is to develop a system for estimating the height of a standing object using geometry-based methods in computer vision (i.e. no sensors and no learning). Our method must only use tools that are available to hikers in the wild, and in particular we focus on using stereo images from a mobile phone. However, we do make some assumptions: that the image has required metadata attached (i.e. longitude, latitude, altitude, and image direction). We use this information to fix the scale ambiguity inherent in our initial 3d scene reconstruction and are able to output height estimations within acceptable margins of error.
 
+We will tackle sub-goals in the following order of increasing difficulty:
+1. Height estimation of a person using a known object calibration (`two_view_simon.py`).
+2. Height estimation of a building with GPS calibration (`two_view_cathedral`).
+3. Height estimation of a mountainous feature in the “wild” with GPS calibration (`two_view_mountain`).
 
+![Simon](person.png)
+![Building](cathedral.png)
+![Mountain](mountain.png)
 
 ## Method
-### Person (easiest) - assume only scale ambiguity
-1. Input: two images of a person holding prior object (known height, same plane as person)
-2. Extract keypoints and match correspondences (SIFT)
-3. Compute fundamental matrix F and camera matrices {P1, P2}
-4. Triangulate using manual annotations of top/bottom of object
-5. Calibrate scale ambiguity using known prior object size
-6. Height estimation by scaling coords by scale
-### Building (harder)
-1. Input: two images of a building taken from two gps locations
-2. Steps 2, 3, and 4 are same as above.
-5. Need to calibrate projective ambiguity using GPS coords and direction data
-6. Height estimation by absolving projective ambiguity
-### Stretch: mountain (hardest)
+1. Stereo image capture of target objects. We obtain sets of varying difficulty, from person to building to mountain.
+2. Uncalibrated reconstruction. Find correspondences between the two images using robust feature detection (i.e. SIFT) and RANSAC to account for noise. Estimate fundamental matrix F from above correspondences and camera matrices P1 and P2 for the uncalibrated case. Perform triangulation of target object to obtain points in 3D, up to a projective ambiguity.
+3. Bundle adjustment to resolve projective ambiguity using GPS and view direction, with additional camera assumptions as constraints.
+4. Height estimation with known GPS distance of baseline (distance between C1 and C2) to obtain correct scale. 
 
-## Concerns
-- do we need to annotate the base? if we don't 
-- should we assume that the image does not have any roll? 
-- how do we use the prior for scaling in the existence of projective ambiguity? 
-    - if the prior and the tall object are both on the same plane it shouldn't matter. 
-    - In the case of a person holding a cereal box, we can safely assume that the prior and the peak are on the same plane
-    - In the case of a tall building/mountain, our prior is the GPS coordinates hmmmm they're not on the same plane
-    - can be fixed with metric rectification
-- should we perform metric rectification on it? 
-    - not for the 2 view geometry case. let's perform dumb scaling in all three directions for now.
-- perform ground-plane calibration from three collinear points (ref: https://www.researchgate.net/figure/Plant-height-measurements-using-stereo-vision_fig1_265797007)
+The key to viability of our method in the outdoor context falls in the last two steps, which uses metadata attached to images captured by our mobile phones to calibrate the 3D reconstruction to the real world.
 
-
-## To Do
-- [x] projective ambiguity with direction constraints and bundle adjustment
-- [x] slides + presentation
-- [x] mountain images from google photos
-
-# leave for report
-- [ ] detector instead of annotation (we still need annotation for ground plane?)
-- [ ] ground plane estimation (from annotation, from depth map)
-- [ ] sfm from building video using colmap
-
-## timeline
-
-Work session (Thursday 11/30)
-1. two view reconstruction on human body, figure out the kinks
-
-Work session (Saturday 12/2)
-2. collect photos of tall building [cathedral of learning]
-3. two view reconstruction on building, should be easy
-4. multi-view sfm on tall building, need to implement
-
-Work session (put together results week of presentation: TBD date)
-7. presentation (Thursday, December 7, 2023)
-
-Extensions (maybe) after presentation:
-- think about single-view case.
-- mountains
-
-
-Some other common deadlines
-- 12/7 geoviz presentation
-- 12/8 comphoto hw6 due
-- 12/8 capstone poster session
-- 12/14 geoviz project reports due
-- 12/18 comphoto project due
-
-
-OH Notes:
-- to rectify projective ambuity, need 8 constraints 
-- center coords at first camera plane 
-- rotation (relative from EXIF) (3), square pixels (2+2), direction of translation (2)
-- bundle adjustment: K1, K2, R, T
+## Results
+![Results](results.png)
