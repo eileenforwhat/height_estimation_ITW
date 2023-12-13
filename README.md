@@ -23,4 +23,8 @@ We will tackle sub-goals in the following order of increasing difficulty:
 The key to viability of our method in the outdoor context falls in the last two steps, which uses metadata attached to images captured by our mobile phones to calibrate the 3D reconstruction to the real world.
 
 ## Results
-![Results](results.png)
+| Target                | Method                                               | Prior                  | Prior Length | Estimated Height | GT Height | Error |
+|-----------------------|------------------------------------------------------|------------------------|--------------|-------------------|-----------|-------|
+| Person<br/>(Simon Seo) | Two-view reconstruction without rectification       | Cereal box             | 0.31m        | 1.82m             | 1.75m     | 4\%   |
+| Building<br/>(Cathedral of Learning) | Ground plane estimation, Two-view reconstruction, bundle adjustment | GPS baseline           | 35m          | 146m              | 163m      | 10\%  |
+| Mountain<br/>(Banner Peak) | Two-view reconstruction, bundle adjustment              | GPS baseline           | 266m         | 295m              | 261m      | 13\%  |
